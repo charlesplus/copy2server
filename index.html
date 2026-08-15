@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>copy2server</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #1b1f24;
+      --muted: #667085;
+      --line: #d9dee7;
+      --brand: #176b5d;
+      --brand-dark: #0d4f44;
+      --danger: #b42318;
+      --shadow: 0 12px 28px rgba(16, 24, 40, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input { font: inherit; }
+    .shell {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .upload-zone {
+      display: grid;
+      place-items: center;
+      min-height: 220px;
+      padding: 28px;
+      border: 2px dashed #a9b6c7;
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: border-color .15s ease, background .15s ease, transform .15s ease;
+    }
+    .upload-zone:focus-visible {
+      outline: 3px solid rgba(23, 107, 93, .22);
+      outline-offset: 3px;
+    }
+    .upload-zone.dragging {
+      border-color: var(--brand);
+      background: #eef8f6;
+      transform: translateY(-1px);
+    }
+    .upload-inner {
+      display: grid;
+      gap: 12px;
+      justify-items: center;
+      text-align: center;
+    }
+    .icon {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--brand);
+      background: #e5f3f0;
+    }
+    .icon svg {
+      width: 28px;
+      height: 28px;
+    }
+    .primary {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 700;
+    }
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      max-width: 620px;
+    }
+    kbd {
+      display: inline-block;
+      min-width: 28px;
+      padding: 1px 7px;
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      background: #fff;
+      color: #344054;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 22px 0 10px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+    .status {
+      min-height: 22px;
+      color: var(--muted);
+      text-align: right;
+    }
+    .status.error { color: var(--danger); }
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+    .file {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 72px;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+    .file-main {
+      min-width: 0;
+    }
+    .file-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      margin-bottom: 4px;
+      font-weight: 650;
+    }
+    .file-title span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-path {
+      margin: 0;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn {
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: #a9b6c7; }
+    .btn.primary-btn {
+      border-color: var(--brand);
+      background: var(--brand);
+      color: #fff;
+    }
+    .btn.primary-btn:hover {
+      background: var(--brand-dark);
+    }
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 118px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+    }
+    .progress {
+      width: min(360px, 100%);
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #dfe5ee;
+    }
+    .bar {
+      width: 0;
+      height: 100%;
+      background: var(--brand);
+      transition: width .15s ease;
+    }
+    @media (max-width: 680px) {
+      .shell {
+        width: min(100vw - 22px, 1120px);
+        padding-top: 18px;
+      }
+      header, .toolbar {
+        align-items: start;
+        flex-direction: column;
+      }
+      .status {
+        text-align: left;
+      }
+      .upload-zone {
+        min-height: 190px;
+        padding: 20px;
+      }
+      .file {
+        grid-template-columns: 1fr;
+      }
+      .file-actions {
+        width: 100%;
+      }
+      .file-actions .btn {
+        flex: 1 1 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <h1>copy2server</h1>
+        <div class="meta">文件保存在服务器 {{.UploadDir}} 目录，保留 {{.RetentionDays}} 天</div>
+      </div>
+      <div class="meta">单次上传上限 {{.MaxUploadMB}} MB</div>
+    </header>
+
+    <input id="fileInput" type="file" multiple hidden>
+    <section id="dropZone" class="upload-zone" tabindex="0" role="button" aria-label="上传文件">
+      <div class="upload-inner">
+        <div class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <path d="M17 8 12 3 7 8"/>
+            <path d="M12 3v12"/>
+          </svg>
+        </div>
+        <p class="primary">点击上传，或直接粘贴文件和图片</p>
+        <p class="hint"><span id="shortcutLabel"><kbd>Ctrl</kbd> + <kbd>V</kbd></span> 后会自动上传，完成后复制服务器文件路径。</p>
+        <div class="progress" id="progress" hidden><div class="bar" id="bar"></div></div>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <h2>已上传文件</h2>
+      <div id="status" class="status" role="status"></div>
+    </div>
+    <section id="fileList" class="list" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const statusEl = document.getElementById('status');
+    const shortcutLabel = document.getElementById('shortcutLabel');
+    const progress = document.getElementById('progress');
+    const bar = document.getElementById('bar');
+
+    const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+    shortcutLabel.innerHTML = isMac ? '<kbd>⌘</kbd> + <kbd>V</kbd>' : '<kbd>Ctrl</kbd> + <kbd>V</kbd>';
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) uploadFiles(fileInput.files);
+      fileInput.value = '';
+    });
+
+    for (const name of ['dragenter', 'dragover']) {
+      dropZone.addEventListener(name, (event) => {
+        event.preventDefault();
+        dropZone.classList.add('dragging');
+      });
+    }
+    for (const name of ['dragleave', 'drop']) {
+      dropZone.addEventListener(name, () => dropZone.classList.remove('dragging'));
+    }
+    dropZone.addEventListener('drop', (event) => {
+      event.preventDefault();
+      if (event.dataTransfer.files.length) uploadFiles(event.dataTransfer.files);
+    });
+
+    document.addEventListener('paste', (event) => {
+      const files = [];
+      for (const item of event.clipboardData.items) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (files.length) {
+        event.preventDefault();
+        uploadFiles(files);
+      }
+    });
+
+    async function uploadFiles(files) {
+      const form = new FormData();
+      for (const file of files) {
+        form.append('file', file, file.name || nameFromType(file.type));
+      }
+      setStatus('上传中...', false);
+      setProgress(25);
+
+      try {
+        const response = await fetch('/api/upload', { method: 'POST', body: form });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '上传失败');
+        setProgress(100);
+        await loadFiles();
+        const firstPath = data.files[0].serverPath;
+        const copied = await copyText(firstPath);
+        setStatus(copied ? '已上传并复制路径：' + firstPath : '已上传，浏览器阻止自动复制，请点列表复制', false);
+      } catch (error) {
+        setStatus(error.message || '上传失败', true);
+      } finally {
+        setTimeout(() => setProgress(0), 350);
+      }
+    }
+
+    async function loadFiles() {
+      const response = await fetch('/api/files', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || '读取列表失败');
+      renderFiles(data.files || []);
+    }
+
+    function renderFiles(files) {
+      fileList.innerHTML = '';
+      if (!files.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = '暂无文件';
+        fileList.append(empty);
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      for (const file of files) {
+        const row = document.createElement('article');
+        row.className = 'file';
+
+        const main = document.createElement('div');
+        main.className = 'file-main';
+
+        const title = document.createElement('div');
+        title.className = 'file-title';
+        const icon = document.createElement('span');
+        icon.textContent = file.isImage ? 'IMG' : 'FILE';
+        const name = document.createElement('span');
+        name.textContent = file.name;
+        title.append(icon, name);
+
+        const path = document.createElement('p');
+        path.className = 'file-path';
+        path.textContent = file.serverPath;
+        path.title = file.serverPath;
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = formatBytes(file.size) + ' · ' + formatTime(file.modifiedAt);
+
+        main.append(title, path, meta);
+
+        const actions = document.createElement('div');
+        actions.className = 'file-actions';
+
+        const copy = document.createElement('button');
+        copy.className = 'btn primary-btn';
+        copy.type = 'button';
+        copy.textContent = '复制路径';
+        copy.addEventListener('click', async () => {
+          const ok = await copyText(file.serverPath);
+          setStatus(ok ? '已复制：' + file.serverPath : '复制失败，请手动复制路径', !ok);
+        });
+
+        const download = document.createElement('a');
+        download.className = 'btn';
+        download.href = file.downloadUrl;
+        download.download = file.name;
+        download.textContent = '下载';
+
+        actions.append(copy, download);
+        row.append(main, actions);
+        fragment.append(row);
+      }
+      fileList.append(fragment);
+    }
+
+    async function copyText(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (_) {}
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.append(textarea);
+      textarea.focus();
+      textarea.select();
+      let copied = false;
+      try {
+        copied = document.execCommand('copy');
+      } catch (_) {
+        copied = false;
+      }
+      textarea.remove();
+      return copied;
+    }
+
+    function setStatus(text, isError) {
+      statusEl.textContent = text;
+      statusEl.classList.toggle('error', Boolean(isError));
+    }
+
+    function setProgress(value) {
+      progress.hidden = value <= 0;
+      bar.style.width = value + '%';
+    }
+
+    function nameFromType(type) {
+      const ext = {
+        'image/png': '.png',
+        'image/jpeg': '.jpg',
+        'image/gif': '.gif',
+        'image/webp': '.webp'
+      }[type] || '';
+      return 'copy2server' + ext;
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      const units = ['KB', 'MB', 'GB', 'TB'];
+      let value = bytes / 1024;
+      let index = 0;
+      while (value >= 1024 && index < units.length - 1) {
+        value /= 1024;
+        index++;
+      }
+      return value.toFixed(value >= 10 ? 1 : 2) + ' ' + units[index];
+    }
+
+    function formatTime(value) {
+      return new Intl.DateTimeFormat('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    }
+
+    loadFiles().catch((error) => setStatus(error.message || '读取列表失败', true));
+  </script>
+</body>
+</html>

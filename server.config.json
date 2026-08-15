@@ -1,0 +1,8 @@
+{
+  "addr": ":8282",
+  "uploadDir": "uploads",
+  "maxUploadMB": 512,
+  "maxStorageGB": 5,
+  "retentionDays": 15,
+  "indexPath": "index.html"
+}

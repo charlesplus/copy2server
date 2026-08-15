@@ -1,0 +1,33 @@
+schema: spec-driven
+
+context: |
+  Project: copy2server, a lightweight local/server web tool for uploading files, screenshots, and clipboard images, then copying the server-side file path.
+  Runtime implementations: Go (`main.go`), Python3 standard library (`server.py`), and Node.js standard library (`server.js`). Keep externally observable HTTP behavior aligned across all three runtimes.
+  Shared assets: `server.config.json` provides server runtime configuration, `client.config.json` provides CLI defaults and `index.html` is the shared web UI template.
+  No dependency goal: Python and Node implementations should remain usable without installing pip/npm packages unless a future OpenSpec change explicitly accepts that tradeoff.
+  Public HTTP surface: `GET /`, `GET /api/files`, `POST /api/upload`, and `GET /download/<name>`.
+  Verification baseline: run `go test ./...`, `python3 -m py_compile server.py`, `node --check server.js`, and smoke-test upload/list behavior when HTTP behavior changes.
+
+rules:
+  proposal:
+    - State compatibility impact for Go, Python3, and Node.js implementations.
+    - Include non-goals when the requested change could be interpreted broadly.
+  specs:
+    - Capture externally observable behavior, not implementation details.
+    - Use requirement scenarios with concrete API paths, configuration keys, or UI flows.
+  design:
+    - Explain how behavior parity will be preserved across all supported runtimes.
+    - Call out any new runtime dependency before implementation.
+  tasks:
+    - Include verification steps for each runtime touched by the change.
+    - Keep tasks small enough to review independently.
+
+operations:
+  apply:
+    guidance:
+      - Prefer updating the shared template or config once instead of duplicating behavior per runtime.
+      - Keep implementation changes scoped to the accepted OpenSpec change.
+  archive:
+    guidance:
+      - Sync accepted behavior into main specs before archiving.
+      - Mention any runtime whose verification could not be run.
